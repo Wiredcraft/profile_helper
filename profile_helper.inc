@@ -18,6 +18,13 @@
  */
 
 /**
+ * Run tasks provided by profiler.
+ */
+function profile_helper_invoke_profiler($profile_key, $task, $url, &$batch_context) {
+  profiler_profile_tasks(profiler_v2_load_config($profile_key), $task, $url);
+}
+
+/**
  * For Drupal core.
  */
 
@@ -25,69 +32,9 @@
  * Flush caches.
  */
 function profile_helper_flush_cache(&$batch_context) {
-  drupal_flush_all_caches();
+  module_rebuild_cache();
   drupal_get_schema(NULL, TRUE);
-}
-
-/**
- * Create an administrator role.
- */
-function profile_helper_create_administrator_role(&$batch_context) {
-  // Create a default role for site administrators, with all available permissions assigned.
-  $admin_role = new stdClass();
-  $admin_role->name = 'administrator';
-  $admin_role->weight = 2;
-  user_role_save($admin_role);
-  user_role_grant_permissions($admin_role->rid, array_keys(module_invoke_all('permission')));
-  // Set this as the administrator role.
-  variable_set('user_admin_role', $admin_role->rid);
-
-  // Assign user 1 the "administrator" role.
-  db_insert('users_roles')
-    ->fields(array('uid' => 1, 'rid' => $admin_role->rid))
-    ->execute();
-}
-
-/**
- * Create terms.
- */
-function profile_helper_create_terms($vocab_machine_name, $terms, $weight, &$batch_context) {
-  if (!module_exists('taxonomy')) {
-    return;
-  }
-
-  $vocab = taxonomy_vocabulary_machine_name_load($vocab_machine_name);
-  if (empty($vocab->vid)) {
-    return;
-  }
-
-  foreach ($terms as $term_name) {
-    $term = new stdClass();
-    $term->vid = $vocab->vid;
-    $term->name = $term_name;
-    $term->weight = $weight++;
-    taxonomy_term_save($term);
-  }
-
-  // TODO: return.
-}
-
-/**
- * Create menu links.
- */
-function profile_helper_create_menu_links($menu_name, $links, $weight, &$batch_context) {
-  // TODO: check?
-
-  foreach ($links as $link_path => $link_title) {
-    $item = array();
-    $item['menu_name'] = $menu_name;
-    $item['link_path'] = $link_path;
-    $item['link_title'] = $link_title;
-    $item['weight'] = $weight++;
-    menu_link_save($item);
-  }
-
-  // TODO: return.
+  drupal_flush_all_caches();
 }
 
 /**
